@@ -50,6 +50,7 @@ logs/
 *.log
 results/
 output/
+!Documents/results/
 
 # Environment Variables
 .env
