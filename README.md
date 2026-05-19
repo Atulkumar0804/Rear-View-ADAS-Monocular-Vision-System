@@ -319,7 +319,12 @@ Select `1`. You will then be asked for the camera source:
 
 **Sub-option 1 — USB / V4L2 Camera:**
 
-Camera index `4` is used automatically — no prompt. Inference starts immediately and the annotated live feed is displayed in a window and saved to `detection_output_camera.mp4`.
+```
+Enter camera index [default: 4]:
+```
+
+Type a camera index and press `Enter`, or press `Enter` to use the default (camera `4`).
+The annotated live feed is displayed in a window and saved to `detection_output_camera.mp4`.
 
 > **Tip:** Run `ls /dev/video*` in a terminal to list available camera devices.  
 > Press `q` or `ESC` to stop. Session FPS stats are printed on exit.

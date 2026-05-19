@@ -78,7 +78,8 @@ case $choice in
 
         case $cam_choice in
             1)
-                cam_id=4
+                read -p "Enter camera index [default: 4]: " cam_id
+                cam_id="${cam_id:-4}"
                 echo ""
                 echo "Starting camera inference on camera $cam_id ..."
                 cd "$CNN_DIR"
