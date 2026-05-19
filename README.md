@@ -143,6 +143,32 @@ mkdir -p testing_data
 python inference/video_inference.py --input testing_data/relative_speed_50.mp4 --output result.mp4
 ```
 
+### Training Datasets
+
+| Dataset | Purpose | Download |
+|---|---|---|
+| **UVH-26** | Fine-grained vehicle classification (26 categories, Indian mixed traffic) | **[Download UVH-26 (Kaggle)](https://www.kaggle.com/datasets/dataclusterlabs/indian-vehicle-dataset)** |
+| **KITTI Depth** | Metric depth model training and evaluation | **[Download KITTI Depth (Official)](https://www.cvlibs.net/datasets/kitti/eval_depth.php?benchmark=depth_prediction)** |
+
+After downloading, place them as follows:
+
+```
+dataset/
+├── uvh26_cls/          # UVH-26 classification dataset
+│   ├── train/
+│   ├── val/
+│   └── test/
+└── kitti_depth/        # KITTI depth dataset
+    ├── train/
+    └── val/
+```
+
+The KITTI depth dataset can also be downloaded using the provided script:
+
+```bash
+bash scripts/download_kitti_depth.sh
+```
+
 ---
 
 ## Prerequisites
