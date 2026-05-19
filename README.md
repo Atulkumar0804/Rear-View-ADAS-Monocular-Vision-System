@@ -32,55 +32,58 @@ Safety alert TPR: **93.3%** | FPR: **6.7%** (lane-aware filtering reduces FPR 2.
 
 ## Results
 
-Live inference output on Indian mixed-traffic highway footage (Qualcomm Rear dataset, 30 FPS, RTX A6000).
-
-### CRITICAL — Bus at 4.3 m, TTC = 0.16 s
-Bus approaching at high speed in the same lane. Emergency braking recommended.
-
-![Critical alert — Bus 4.3m TTC 0.16s](Documents/results/critical_bus_ttc0.16s.jpg)
+Each panel shows **Without Inference** (raw camera feed) vs **With Inference** (full ADAS overlay) side by side.  
+Dataset: `relative_speed_50.mp4` — Indian mixed-traffic highway, 30 FPS, RTX A6000.
 
 ---
 
-### WARNING — Multiple vehicles, Bus at 9.2 m, TTC = 1.82 s
-Bus in the left lane approaching, Sedan and Hatchback in adjacent lanes monitored simultaneously.
+### CRITICAL — LCV at 10.8 m, TTC = 0.27 s
+LCV rapidly closing in the same lane. Full-width red alert banner at bottom, per-track emergency brake instruction, corner tick marks on bounding box.
 
-![Warning alert — multi-vehicle scene](Documents/results/warning_hatchback_ttc1.82s.jpg)
-
----
-
-### CAUTION — Dense mixed-traffic, multiple vehicles tracked
-Eight simultaneous detections across lanes — Buses, Sedans, Trucks — with per-track distance, speed, and motion state overlaid.
-
-![Caution — dense traffic 8 vehicles](Documents/results/multi_vehicle_8_detections.jpg)
+![Critical](Documents/results/compare_critical.jpg)
 
 ---
 
-### INFO — Adjacent-lane vehicles, no same-lane threat
-Vehicles in left and right lanes receding or stable; no collision risk on ego lane.
+### WARNING — Hatchback approaching at 23 km/h
+Vehicle in center lane approaching with decreasing gap. Orange bounding box, distance badge, TTC and DRAC overlaid, deceleration instruction.
 
-![Info — adjacent lane vehicles](Documents/results/caution_three_wheeler_10m.jpg)
-
----
-
-### SAFE — Clear rear, vehicles receding
-All detected vehicles maintaining distance or moving away.
-
-![Safe — clear rear](Documents/results/safe_clear_rear.jpg)
+![Warning](Documents/results/compare_warning.jpg)
 
 ---
 
-### Run Statistics (30-second Qualcomm clip)
+### CAUTION — Close following distance
+Vehicle within caution threshold. Cyan bounding box, distance and motion state clearly visible, monitor instruction shown.
+
+![Caution](Documents/results/compare_caution.jpg)
+
+---
+
+### MULTI-VEHICLE — 9 simultaneous detections
+Dense mixed traffic — LCVs, Hatchbacks, Persons across multiple lanes. Each track has its own distance badge, motion state, and lane-aware safety assessment.
+
+![Multi-vehicle](Documents/results/compare_multi_vehicle.jpg)
+
+---
+
+### SAFE — All vehicles receding
+Green bounding boxes, distance badges, SAFE legend shown. No alert banner.
+
+![Safe](Documents/results/compare_safe.jpg)
+
+---
+
+### Run Statistics (`relative_speed_50.mp4`)
 
 | Metric | Value |
 |---|---|
-| Input video | `Qualcomm_Rear.mp4` (Indian highway, 30 FPS) |
-| Total frames processed | 902 |
-| Average FPS (RTX A6000) | 16.1 (video_inference with full logging) |
-| Total detections logged | 3,199 across 902 frames |
-| CRITICAL alerts | 280 frames |
-| WARNING alerts | 41 frames |
-| CAUTION alerts | 230 frames |
-| Peak detections per frame | 8 vehicles simultaneously |
+| Input video | `relative_speed_50.mp4` (Indian highway, 30 FPS) |
+| Total frames processed | 924 |
+| Average FPS (RTX A6000) | 36.8 |
+| Total detections logged | 3,783 across 924 frames |
+| CRITICAL alerts | 225 frames |
+| WARNING alerts | 706 frames |
+| CAUTION alerts | 19 frames |
+| Peak detections per frame | 9 vehicles simultaneously |
 
 ---
 
