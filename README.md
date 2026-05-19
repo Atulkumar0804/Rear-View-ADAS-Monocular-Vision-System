@@ -323,7 +323,9 @@ Select `1`. You will then be asked for the camera source:
 Enter camera index [default: 4]:
 ```
 
-Type a camera index and press `Enter`, or press `Enter` to use the default (camera `4`).
+- Type `4` + Enter → uses camera `4`
+- Type `2` + Enter → uses camera `2`
+- Type `0` + Enter → uses camera `0`
 The annotated live feed is displayed in a window and saved to `detection_output_camera.mp4`.
 
 > **Tip:** Run `ls /dev/video*` in a terminal to list available camera devices.  
