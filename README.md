@@ -129,6 +129,20 @@ CNN/
 
 > **Note:** `dataset/`, `testing_data/`, model weight files (`*.pt`, `*.onnx`, `*.safetensors`), and personal documents are excluded from git via `.gitignore`.
 
+### Testing Video Dataset
+
+The testing videos used in the results above are available for download from Google Drive:
+
+**[Download Testing Dataset (Google Drive)](https://drive.google.com/drive/folders/1M3XMaNEwHySBKchR0o6APdtSVhM5PcPI?usp=sharing)**
+
+Place the downloaded videos in `testing_data/` before running inference:
+
+```bash
+mkdir -p testing_data
+# Move downloaded videos into testing_data/
+python inference/video_inference.py --input testing_data/relative_speed_50.mp4 --output result.mp4
+```
+
 ---
 
 ## Prerequisites
