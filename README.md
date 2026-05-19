@@ -30,6 +30,60 @@ Safety alert TPR: **93.3%** | FPR: **6.7%** (lane-aware filtering reduces FPR 2.
 
 ---
 
+## Results
+
+Live inference output on Indian mixed-traffic highway footage (Qualcomm Rear dataset, 30 FPS, RTX A6000).
+
+### CRITICAL — Bus at 4.3 m, TTC = 0.16 s
+Bus approaching at high speed in the same lane. Emergency braking recommended.
+
+![Critical alert — Bus 4.3m TTC 0.16s](Documents/results/critical_bus_ttc0.16s.jpg)
+
+---
+
+### WARNING — Multiple vehicles, Bus at 9.2 m, TTC = 1.82 s
+Bus in the left lane approaching, Sedan and Hatchback in adjacent lanes monitored simultaneously.
+
+![Warning alert — multi-vehicle scene](Documents/results/warning_hatchback_ttc1.82s.jpg)
+
+---
+
+### CAUTION — Dense mixed-traffic, multiple vehicles tracked
+Eight simultaneous detections across lanes — Buses, Sedans, Trucks — with per-track distance, speed, and motion state overlaid.
+
+![Caution — dense traffic 8 vehicles](Documents/results/multi_vehicle_8_detections.jpg)
+
+---
+
+### INFO — Adjacent-lane vehicles, no same-lane threat
+Vehicles in left and right lanes receding or stable; no collision risk on ego lane.
+
+![Info — adjacent lane vehicles](Documents/results/caution_three_wheeler_10m.jpg)
+
+---
+
+### SAFE — Clear rear, vehicles receding
+All detected vehicles maintaining distance or moving away.
+
+![Safe — clear rear](Documents/results/safe_clear_rear.jpg)
+
+---
+
+### Run Statistics (30-second Qualcomm clip)
+
+| Metric | Value |
+|---|---|
+| Input video | `Qualcomm_Rear.mp4` (Indian highway, 30 FPS) |
+| Total frames processed | 902 |
+| Average FPS (RTX A6000) | 16.1 (video_inference with full logging) |
+| Total detections logged | 3,199 across 902 frames |
+| CRITICAL alerts | 280 frames |
+| WARNING alerts | 41 frames |
+| CAUTION alerts | 230 frames |
+| Peak detections per frame | 8 vehicles simultaneously |
+
+---
+
 ## Repository Structure
 
 ```
