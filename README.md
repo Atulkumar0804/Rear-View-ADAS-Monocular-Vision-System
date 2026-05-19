@@ -187,8 +187,8 @@ bash scripts/download_kitti_depth.sh
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Atulkumar0804/Rear-View-ADAS.git
-cd Rear-View-ADAS/CNN
+git clone https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System.git
+cd Rear-View-ADAS-Monocular-Vision-System
 ```
 
 ### 2. Create and activate a virtual environment
