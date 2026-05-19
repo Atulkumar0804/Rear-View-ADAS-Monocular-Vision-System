@@ -454,86 +454,102 @@ class RiderActionRecommendation:
         """
         vehicle_lane = lane_info.get('lane', 'CENTER')
         same_lane = vehicle_lane == 'CENTER'
-        
-        # SAME LANE VEHICLES - Collision risk
+
+        # Rear-view perspective: relative_speed_kmh > 0 means rear vehicle is faster (gap closing).
+        # Braking is never the correct response — it reduces the gap further.
+        # Correct responses: CHANGE_LANE (get out of path) or ACCELERATE (widen gap).
+
+        # SAME LANE VEHICLES — rear collision risk
         if same_lane:
             if safety_level == 'CRITICAL':
                 if relative_speed_kmh > 5:
+                    # Rear vehicle closing fast — immediate evasive action needed
                     return {
-                        'action': 'EMERGENCY_BRAKE',
+                        'action': 'CHANGE_LANE',
                         'urgency': 'CRITICAL',
-                        'description': f'⚠️ IMMEDIATE BRAKING REQUIRED! Vehicle {distance_m:.1f}m away approaching at {speed_kmh:.0f}km/h',
-                        'rider_instruction': 'Apply strong brakes immediately!',
-                        'reason': f'Collision imminent - vehicle catching up at {relative_speed_kmh:.1f}km/h relative speed'
+                        'description': f'⚠️ COLLISION RISK! Vehicle {distance_m:.1f}m behind closing at {relative_speed_kmh:.0f}km/h',
+                        'rider_instruction': 'Change lane immediately or accelerate to escape!',
+                        'reason': f'Rear vehicle catching up at {relative_speed_kmh:.1f}km/h — braking would worsen the gap'
+                    }
+                else:
+                    # Very close but near-same speed — gap dangerously small
+                    return {
+                        'action': 'ACCELERATE',
+                        'urgency': 'CRITICAL',
+                        'description': f'⚠️ CRITICAL: Vehicle {distance_m:.1f}m behind — increase gap now!',
+                        'rider_instruction': 'Accelerate to create safe distance.',
+                        'reason': f'Dangerously close following — {distance_m:.1f}m gap at current speeds'
+                    }
+
+            elif safety_level == 'WARNING':
+                if relative_speed_kmh > 10:
+                    return {
+                        'action': 'CHANGE_LANE',
+                        'urgency': 'HIGH',
+                        'description': f'⚠️ WARNING: Vehicle {distance_m:.1f}m behind approaching at {relative_speed_kmh:.0f}km/h',
+                        'rider_instruction': 'Prepare to change lane or accelerate.',
+                        'reason': f'Rear vehicle closing gap at {relative_speed_kmh:.1f}km/h'
                     }
                 else:
                     return {
-                        'action': 'STRONG_DECELERATE',
-                        'urgency': 'CRITICAL',
-                        'description': f'⚠️ CRITICAL: Vehicle {distance_m:.1f}m away - reduce speed now!',
-                        'rider_instruction': 'Decelerate aggressively to increase gap.',
-                        'reason': 'Critical collision risk'
+                        'action': 'ACCELERATE',
+                        'urgency': 'HIGH',
+                        'description': f'⚠️ WARNING: Vehicle {distance_m:.1f}m behind — increase speed',
+                        'rider_instruction': 'Speed up gradually to increase following distance.',
+                        'reason': f'Rear vehicle at {distance_m:.1f}m and closing'
                     }
-            
-            elif safety_level == 'WARNING':
-                return {
-                    'action': 'DECELERATE',
-                    'urgency': 'HIGH',
-                    'description': f'⚠️ WARNING: Vehicle {distance_m:.1f}m away approaching - reduce speed',
-                    'rider_instruction': 'Slow down gradually to maintain safe distance.',
-                    'reason': f'Vehicle approaching at {relative_speed_kmh:.1f}km/h, closing gap'
-                }
-            
+
             elif safety_level == 'CAUTION':
                 return {
                     'action': 'MONITOR',
                     'urgency': 'MEDIUM',
-                    'description': f'ℹ️ CAUTION: Vehicle {distance_m:.1f}m away - monitor distance',
-                    'rider_instruction': 'Reduce speed or maintain safe distance.',
-                    'reason': f'Close following distance - currently {distance_m:.1f}m'
+                    'description': f'ℹ️ CAUTION: Vehicle {distance_m:.1f}m behind — monitor distance',
+                    'rider_instruction': 'Monitor rear vehicle. Be ready to accelerate or change lane.',
+                    'reason': f'Close following distance — {distance_m:.1f}m'
                 }
-            
+
             else:  # SAFE
-                if ego_speed_kmh > 60:
+                if motion == 'receding':
                     return {
                         'action': 'MAINTAIN_SPEED',
                         'urgency': 'LOW',
-                        'description': f'✓ Safe: Vehicle {distance_m:.1f}m away at {speed_kmh:.0f}km/h',
-                        'rider_instruction': 'Maintain current speed and lane position.',
-                        'reason': 'Safe following distance maintained'
+                        'description': f'✓ Safe: Rear vehicle {distance_m:.1f}m away and receding',
+                        'rider_instruction': 'Maintain current speed.',
+                        'reason': 'Gap is increasing — safe condition'
                     }
                 else:
                     return {
                         'action': 'MAINTAIN_SPEED',
                         'urgency': 'LOW',
-                        'description': f'✓ Safe: Vehicle {distance_m:.1f}m away, all clear',
+                        'description': f'✓ Safe: Rear vehicle {distance_m:.1f}m away, all clear',
                         'rider_instruction': 'Continue normal driving.',
-                        'reason': 'Adequate safety margins'
+                        'reason': 'Adequate safety margins maintained'
                     }
-        
-        # ADJACENT LANE VEHICLES - No collision risk, just awareness
+
+        # ADJACENT LANE VEHICLES — awareness only, no collision risk
+        # A vehicle approaching fast in an adjacent lane may be overtaking — do NOT change into it.
         else:
             if motion == 'approaching' and distance_m < 15:
                 return {
                     'action': 'BE_AWARE',
                     'urgency': 'LOW',
-                    'description': f'ℹ️ Vehicle in {vehicle_lane} lane approaching - {distance_m:.1f}m away',
-                    'rider_instruction': f'Be aware of vehicle in {vehicle_lane} lane. Stay in your lane.',
-                    'reason': f'Vehicle in {vehicle_lane} lane approaching but in different lane - no collision risk'
+                    'description': f'ℹ️ Vehicle in {vehicle_lane} lane approaching — {distance_m:.1f}m away',
+                    'rider_instruction': f'Stay in your lane — vehicle overtaking on {vehicle_lane} side.',
+                    'reason': f'Adjacent {vehicle_lane} lane vehicle approaching — do not merge into that lane'
                 }
             elif motion == 'approaching':
                 return {
                     'action': 'MONITOR',
                     'urgency': 'LOW',
-                    'description': f'ℹ️ Vehicle in {vehicle_lane} lane - {distance_m:.1f}m away',
-                    'rider_instruction': f'Monitor vehicle in {vehicle_lane} lane.',
-                    'reason': f'Vehicle in adjacent {vehicle_lane} lane'
+                    'description': f'ℹ️ Vehicle in {vehicle_lane} lane — {distance_m:.1f}m away',
+                    'rider_instruction': f'Monitor {vehicle_lane} lane. Hold your lane position.',
+                    'reason': f'Adjacent {vehicle_lane} lane vehicle — no collision risk'
                 }
             else:
                 return {
                     'action': 'MONITOR',
                     'urgency': 'LOW',
-                    'description': f'ℹ️ Vehicle in {vehicle_lane} lane - {distance_m:.1f}m away',
+                    'description': f'ℹ️ Vehicle in {vehicle_lane} lane — {distance_m:.1f}m away',
                     'rider_instruction': f'Monitor vehicle in {vehicle_lane} lane.',
                     'reason': f'Vehicle in adjacent {vehicle_lane} lane'
                 }
