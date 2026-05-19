@@ -65,25 +65,25 @@ Input Video File
 
 ```bash
 # Basic: process video, write output
-python inference/video_inference.py --input video.mp4 --output result.mp4
+python3 inference/video_inference.py --input video.mp4 --output result.mp4
 
 # Write CSV telemetry log alongside video
-python inference/video_inference.py --input video.mp4 --output result.mp4 --log detections.csv
+python3 inference/video_inference.py --input video.mp4 --output result.mp4 --log detections.csv
 
 # CPU-only mode
-python inference/video_inference.py --input video.mp4 --output result.mp4 --device cpu
+python3 inference/video_inference.py --input video.mp4 --output result.mp4 --device cpu
 
 # Set classical depth weight (0.0 = full ML, 1.0 = full classical)
-python inference/video_inference.py --input video.mp4 --output result.mp4 --classical-weight 0.75
+python3 inference/video_inference.py --input video.mp4 --output result.mp4 --classical-weight 0.75
 
 # Set ML depth correction frequency (frames between ML depth refreshes)
-python inference/video_inference.py --input video.mp4 --output result.mp4 --depth-interval 15
+python3 inference/video_inference.py --input video.mp4 --output result.mp4 --depth-interval 15
 
 # Set ego vehicle speed for SSM calculations
-python inference/video_inference.py --input video.mp4 --output result.mp4 --ego-speed 40.0
+python3 inference/video_inference.py --input video.mp4 --output result.mp4 --ego-speed 40.0
 
 # Full example with all options
-python inference/video_inference.py \
+python3 inference/video_inference.py \
     --input rear_video.mp4 \
     --output annotated.mp4 \
     --log metrics.csv \

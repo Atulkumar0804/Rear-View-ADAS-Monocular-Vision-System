@@ -56,36 +56,36 @@ Live Camera / Video File
 
 ```bash
 # Basic: default USB camera (index 0)
-python inference/camera_inference.py
+python3 inference/camera_inference.py
 
 # Specify camera index
-python inference/camera_inference.py --camera 1
+python3 inference/camera_inference.py --camera 1
 
 # Process a video file instead of live camera
-python inference/camera_inference.py --camera /path/to/video.mp4
+python3 inference/camera_inference.py --camera /path/to/video.mp4
 
 # Intel RealSense D455 camera
-python inference/camera_inference.py --realsense
+python3 inference/camera_inference.py --realsense
 
 # Save output to file
-python inference/camera_inference.py --camera 0 --save output.mp4
+python3 inference/camera_inference.py --camera 0 --save output.mp4
 
 # Run without display (headless / server)
-python inference/camera_inference.py --camera 0 --no-display --save output.mp4
+python3 inference/camera_inference.py --camera 0 --no-display --save output.mp4
 
 # Select GPU profile
-python inference/camera_inference.py --profile a6000_full
-python inference/camera_inference.py --profile jetson_nano_restricted
-python inference/camera_inference.py --profile jetson_nano_power_save
+python3 inference/camera_inference.py --profile a6000_full
+python3 inference/camera_inference.py --profile jetson_nano_restricted
+python3 inference/camera_inference.py --profile jetson_nano_power_save
 
 # CPU-only mode
-python inference/camera_inference.py --device cpu
+python3 inference/camera_inference.py --device cpu
 
 # Rear-camera mode flag (enables rear-view specific tuning)
-python inference/camera_inference.py --camera 0 --rear-camera
+python3 inference/camera_inference.py --camera 0 --rear-camera
 
 # Enable hybrid depth estimation
-python inference/camera_inference.py --camera 0 --hybrid-depth
+python3 inference/camera_inference.py --camera 0 --hybrid-depth
 ```
 
 ### All Arguments
@@ -275,7 +275,7 @@ Use `v4l2-ctl --list-devices` on Linux to see available devices.
 pip install pyrealsense2
 
 # Run with RealSense
-python inference/camera_inference.py --realsense
+python3 inference/camera_inference.py --realsense
 ```
 
 If RealSense fails, the script automatically falls back to a USB camera.

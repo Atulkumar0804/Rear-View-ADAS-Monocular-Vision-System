@@ -140,7 +140,7 @@ Place the downloaded videos in `testing_data/` before running inference:
 ```bash
 mkdir -p testing_data
 # Move downloaded videos into testing_data/
-python inference/video_inference.py --input testing_data/relative_speed_50.mp4 --output result.mp4
+python3 inference/video_inference.py --input testing_data/relative_speed_50.mp4 --output result.mp4
 ```
 
 ### Training Datasets
@@ -216,7 +216,7 @@ Model weights are not stored in git due to size. Download them using the provide
 
 ```bash
 # Download ZoeDepth / DA2 base weights
-python scripts/download_zoedepth.py
+python3 scripts/download_zoedepth.py
 
 # Download KITTI depth dataset (for retraining only)
 # bash scripts/download_kitti_depth.sh
@@ -243,8 +243,8 @@ Check the [Releases page](https://github.com/Atulkumar0804/Rear-View-ADAS/releas
 ### 5. Verify setup
 
 ```bash
-python -c "import torch; print('CUDA:', torch.cuda.is_available())"
-python -c "from ultralytics import YOLO; print('Ultralytics OK')"
+python3 -c "import torch; print('CUDA:', torch.cuda.is_available())"
+python3 -c "from ultralytics import YOLO; print('Ultralytics OK')"
 ```
 
 ---
@@ -258,22 +258,22 @@ python -c "from ultralytics import YOLO; print('Ultralytics OK')"
 source .venv/bin/activate
 
 # Default USB camera (index 0)
-python inference/camera_inference.py
+python3 inference/camera_inference.py
 
 # Specific camera index
-python inference/camera_inference.py --camera 1
+python3 inference/camera_inference.py --camera 1
 
 # Intel RealSense D455
-python inference/camera_inference.py --realsense
+python3 inference/camera_inference.py --realsense
 
 # Save output video
-python inference/camera_inference.py --camera 0 --save output.mp4
+python3 inference/camera_inference.py --camera 0 --save output.mp4
 
 # Headless — no display window, save to file only (useful on servers)
-python inference/camera_inference.py --camera 0 --no-display --save output.mp4
+python3 inference/camera_inference.py --camera 0 --no-display --save output.mp4
 
 # Jetson power-save profile
-python inference/camera_inference.py --profile jetson_nano_power_save
+python3 inference/camera_inference.py --profile jetson_nano_power_save
 ```
 
 Press `q` or `ESC` to stop. Session FPS stats are printed on exit.
@@ -292,16 +292,16 @@ See [Documents/CAMERA_INFERENCE.md](Documents/CAMERA_INFERENCE.md) for full argu
 source .venv/bin/activate
 
 # Basic: process video, save result
-python inference/video_inference.py --input video.mp4 --output result.mp4
+python3 inference/video_inference.py --input video.mp4 --output result.mp4
 
 # With CSV telemetry log
-python inference/video_inference.py --input video.mp4 --output result.mp4 --log metrics.csv
+python3 inference/video_inference.py --input video.mp4 --output result.mp4 --log metrics.csv
 
 # Set ego vehicle speed (km/h) for accurate SSM calculations
-python inference/video_inference.py --input video.mp4 --output result.mp4 --ego-speed 40.0
+python3 inference/video_inference.py --input video.mp4 --output result.mp4 --ego-speed 40.0
 
 # Tune depth pipeline
-python inference/video_inference.py \
+python3 inference/video_inference.py \
     --input video.mp4 \
     --output result.mp4 \
     --depth-interval 15 \
@@ -469,7 +469,7 @@ The web interface streams the annotated ADAS output to any browser on `http://<h
 
 **No CUDA device found:**
 ```bash
-python -c "import torch; print(torch.cuda.device_count())"
+python3 -c "import torch; print(torch.cuda.device_count())"
 # If 0, install CUDA-enabled PyTorch:
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
@@ -483,7 +483,7 @@ v4l2-ctl --list-devices        # Linux
 **YOLO model not found:**
 ```bash
 # yolo11n.pt auto-downloads on first run. If it fails, download manually:
-python -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
+python3 -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
 ```
 
 **Classifier weights missing:**
@@ -501,9 +501,9 @@ This is non-fatal. The system continues with IoU-based tracking (slightly lower 
 **Low FPS on Jetson:**
 ```bash
 # Switch to power-save profile
-python inference/camera_inference.py --profile jetson_nano_restricted
+python3 inference/camera_inference.py --profile jetson_nano_restricted
 # Or enable TensorRT (see inference/GPU_CONFIG_GUIDE.md)
-python scripts/export_jetson.py
+python3 scripts/export_jetson.py
 ```
 
 ---
