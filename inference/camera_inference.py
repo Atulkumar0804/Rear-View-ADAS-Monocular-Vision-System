@@ -1471,58 +1471,110 @@ def main():
     
     # If not using RealSense, try USB camera
     if not use_realsense:
+
+        def _camera_streams_frames(idx, test_res=None):
+            """Open camera idx, optionally set resolution, and verify a frame reads."""
+            tc = cv2.VideoCapture(idx)
+            if not tc.isOpened():
+                tc.release()
+                return False, 0, 0
+            if test_res:
+                tc.set(cv2.CAP_PROP_FRAME_WIDTH,  test_res[0])
+                tc.set(cv2.CAP_PROP_FRAME_HEIGHT, test_res[1])
+            tc.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            ret, frame = tc.read()
+            w = int(tc.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h = int(tc.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            tc.release()
+            return ret and frame is not None and frame.size > 0, w, h
+
+        def _detect_realsense_devices():
+            """Check if /dev/video* devices are all RealSense sub-streams."""
+            import os, glob
+            realsense_count, total = 0, 0
+            for p in glob.glob('/sys/class/video4linux/video*/name'):
+                try:
+                    name = open(p).read().strip().lower()
+                    total += 1
+                    if 'realsense' in name or 'intel' in name:
+                        realsense_count += 1
+                except Exception:
+                    pass
+            return total > 0 and realsense_count == total
+
         # Try the specified camera first
         try:
             camera_id = int(args.camera)
-            cap = cv2.VideoCapture(camera_id)
-            if cap.isOpened():
-                print(f"✅ Camera {camera_id} opened successfully")
+            ok_req, w_req, h_req = _camera_streams_frames(camera_id, (args.width, args.height))
+            ok_nat, w_nat, h_nat = _camera_streams_frames(camera_id) if not ok_req else (True, w_req, h_req)
+            if ok_req:
+                cap = cv2.VideoCapture(camera_id)
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH,  args.width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                print(f"✅ Camera {camera_id} opened at {w_req}x{h_req}")
+            elif ok_nat:
+                cap = cv2.VideoCapture(camera_id)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                print(f"⚠️  {args.width}x{args.height} unsupported, using native {w_nat}x{h_nat}")
+                print(f"✅ Camera {camera_id} opened at native {w_nat}x{h_nat}")
             else:
-                print(f"⚠️ Camera {camera_id} not available, trying other cameras...")
+                print(f"⚠️ Camera {camera_id} not available or not streaming, scanning...")
                 cap = None
         except ValueError:
-            # If it's not a number, treat it as a video file path
             cap = cv2.VideoCapture(args.camera)
             if cap.isOpened():
                 print(f"✅ Video file opened: {args.camera}")
             else:
                 print(f"⚠️ Video file not found: {args.camera}")
                 cap = None
-        
-        # If the specified camera failed, try to find an available camera
+
+        # Auto-scan if specified camera failed
         if not cap or not cap.isOpened():
-            print("🔍 Searching for available cameras...")
+            print("🔍 Searching for available cameras (verifying frame capture)...")
             available_cameras = []
-            
-            # Try common camera indices
-            for i in range(10):  # Check cameras 0-9
-                test_cap = cv2.VideoCapture(i)
-                if test_cap.isOpened():
-                    width = int(test_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                    height = int(test_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    available_cameras.append((i, width, height))
-                    test_cap.release()
-            
+
+            for i in range(10):
+                ok, w, h = _camera_streams_frames(i)
+                if ok:
+                    available_cameras.append((i, w, h))
+
             if available_cameras:
-                # Use the first available camera
-                camera_id, width, height = available_cameras[0]
+                camera_id, native_w, native_h = available_cameras[0]
                 cap = cv2.VideoCapture(camera_id)
-                print(f"✅ Found and opened camera {camera_id} ({width}x{height})")
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                # Try requested resolution; fall back to native if it breaks streaming
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH,  args.width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
+                ret_test, _ = cap.read()
+                if not ret_test:
+                    cap.release()
+                    cap = cv2.VideoCapture(camera_id)
+                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    print(f"⚠️  {args.width}x{args.height} unsupported, using native {native_w}x{native_h}")
+                print(f"✅ Found streaming camera {camera_id} ({int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))})")
             else:
-                print("❌ No cameras found on the system")
-                print("💡 Troubleshooting tips:")
-                print("   • Connect a USB webcam")
-                print("   • Check USB cable connections")
-                print("   • Try running: v4l2-ctl --list-devices")
-                print("   • For RealSense: use --realsense flag")
+                print("❌ No streaming cameras found on the system")
+                if _detect_realsense_devices():
+                    print("")
+                    print("💡 Intel RealSense detected — all /dev/video* devices are RealSense")
+                    print("   sub-streams (depth, IR, metadata). OpenCV cannot open them directly.")
+                    print("")
+                    print("   ➤  Use the RealSense SDK instead:")
+                    print("      python3 inference/camera_inference.py --realsense")
+                    print("")
+                    print("   ➤  Or run on a video file:")
+                    print("      python3 inference/camera_inference.py --camera testing_data/relative_speed_50.mp4")
+                else:
+                    print("💡 Troubleshooting tips:")
+                    print("   • Connect a USB webcam and retry")
+                    print("   • Run: ls /dev/video* to list devices")
+                    print("   • For RealSense: python3 inference/camera_inference.py --realsense")
                 return
-    
+
     # Set frame dimensions
     if not use_realsense:
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
-        
-        actual_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        actual_width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         actual_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     else:
         actual_width = args.width
