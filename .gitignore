@@ -1,0 +1,118 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+
+# Large Model Files (Pre-trained weights)
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.bin
+models/**/*.pt
+models/**/*.pth
+models/**/*.onnx
+
+# Dataset and Data Files
+dataset/
+calibration_data/
+test_data/
+testing\ video/
+*.mp4
+*.avi
+*.mov
+
+# Logs and Outputs
+logs/
+*.log
+results/
+output/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing and Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Compiled Extensions
+*.so
+*.out
+
+# Package files
+*.whl
+*.tar.gz
+
+# VS Code specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Local Claude Code settings
+.claude/
+
+# Testing data (videos too large for GitHub)
+testing_data/
+
+# PDF files (generated figures, paper drafts)
+*.pdf
+
+# LaTeX source files (academic drafts)
+*.tex
+
+# Paper figure generation script
+generate_paper_figures.py
+
+# Model weight files (large binaries — download separately)
+*.safetensors
+*.data
+
+# ZoeDepth and MiDaS source copies (third-party repos, not part of this project)
+models/zoedepth/
+
+# Training checkpoints (intermediate artifacts, not final models)
+models/depth_anything_v2_finetuned/checkpoint-*/
+models/depth_anything_v2_finetuned/training_args.bin
