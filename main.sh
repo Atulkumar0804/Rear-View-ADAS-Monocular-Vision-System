@@ -14,148 +14,143 @@ else
     PYTHON="python3"
 fi
 
-echo "🐍 Using Python: $PYTHON"
+echo "Using Python: $PYTHON"
 export PYTHONPATH="$CNN_DIR:$PYTHONPATH"
 
 clear
 echo "================================================================"
-echo "🚗 CNN VEHICLE DETECTION - MAIN LAUNCHER"
+echo "  REAR-VIEW ADAS - MAIN LAUNCHER"
 echo "================================================================"
 echo ""
 
-# GPU Profile Selection
-echo "🎮 Select GPU Profile:"
+# ── GPU Profile Selection ────────────────────────────────────────────────────
+echo "Select GPU Profile:"
 echo ""
-echo "  1. 🖥️  RTX A6000 (Full Performance)"
-echo "  2. 📱 Jetson Nano (Restricted - 8GB memory)"
-echo "  3. ⚡ Jetson Nano (Power Save Mode - 7W)"
+echo "  1. RTX A6000        (Full Performance)"
+echo "  2. Jetson Nano      (Restricted - 8 GB memory)"
+echo "  3. Jetson Nano      (Power Save - 7 W)"
 echo ""
 read -p "Enter GPU profile [1-3, default: 1]: " gpu_choice
 gpu_choice=${gpu_choice:-1}
 
-# Map choice to profile name
 case $gpu_choice in
     1)
         GPU_PROFILE="a6000_full"
-        echo "✓ Selected: RTX A6000 Full Performance"
+        echo "Selected: RTX A6000 Full Performance"
         ;;
     2)
         GPU_PROFILE="jetson_nano_restricted"
-        echo "✓ Selected: Jetson Nano Restricted (8GB)"
+        echo "Selected: Jetson Nano Restricted (8 GB)"
         ;;
     3)
         GPU_PROFILE="jetson_nano_power_save"
-        echo "✓ Selected: Jetson Nano Power Save"
+        echo "Selected: Jetson Nano Power Save"
         ;;
     *)
-        echo "❌ Invalid GPU profile choice"
+        echo "Invalid choice. Exiting."
         exit 1
         ;;
 esac
 
 echo ""
 echo "================================================================"
-echo "Select what you want to run:"
+echo "Select mode:"
 echo ""
-echo "  1. 📹 Camera Detection (Real-time)"
-echo "  2. 🎬 Video Processing"  
-echo "  3. 🏋️  Train Models"
-echo "  4. ❌ Exit"
+echo "  1. Camera Detection   (Real-time inference on live camera)"
+echo "  2. Video Processing   (Offline inference on a video file)"
+echo "  3. Train Models       (Fine-tune classifier or depth model)"
+echo "  4. Exit"
 echo ""
 read -p "Enter choice [1-4]: " choice
 
 case $choice in
+
+    # ── MODE 1: Camera Detection ─────────────────────────────────────────────
     1)
         echo ""
-        echo "📹 Starting Camera Detection with GPU Profile: $GPU_PROFILE"
+        echo "Camera Detection  |  GPU Profile: $GPU_PROFILE"
         echo ""
-        echo "  1. 📷 RealSense D455 Camera (Recommended)"
-        echo "  2. 🎥 USB Camera"
-        echo "  3. 📹 Test Video (Fallback)"
+        echo "  1. USB / V4L2 Camera"
+        echo "  2. Test Video (use a local video file as input)"
         echo ""
-        read -p "Select camera source [1-3, default: 1]: " cam_choice
+        read -p "Select camera source [1-2, default: 1]: " cam_choice
         cam_choice=${cam_choice:-1}
-        
+
         case $cam_choice in
             1)
+                read -p "Enter camera index [default: 4]: " cam_id
+                cam_id=${cam_id:-4}
                 echo ""
-                echo "🚀 Running with RealSense D455 camera..."
-                cd "$CNN_DIR"
-                $PYTHON inference/camera_inference.py \
-                    --profile "$GPU_PROFILE" \
-                    --realsense \
-                    --save "detection_output_realsense.mp4" \
-                    -v
-                ;;
-            2)
-                read -p "Enter camera ID [default: 0]: " cam_id
-                cam_id=${cam_id:-0}
-                echo ""
-                echo "🚀 Running with USB camera..."
+                echo "Starting camera inference on camera $cam_id ..."
                 cd "$CNN_DIR"
                 $PYTHON inference/camera_inference.py \
                     --profile "$GPU_PROFILE" \
                     --camera "$cam_id" \
-                    --save "detection_output_usb.mp4" \
+                    --save "detection_output_camera.mp4" \
                     -v
                 ;;
-            3)
+            2)
+                read -p "Enter video file path: " video_path
+                if [ ! -f "$video_path" ]; then
+                    echo "File not found: $video_path"
+                    exit 1
+                fi
                 echo ""
-                echo "🚀 Running with test video..."
+                echo "Starting camera_inference on: $video_path ..."
                 cd "$CNN_DIR"
                 $PYTHON inference/camera_inference.py \
                     --profile "$GPU_PROFILE" \
-                    --camera "testing_data/IISc _Road.mp4" \
-                    --save "detection_output_test.mp4" \
+                    --camera "$video_path" \
+                    --save "${video_path%.*}_camera_result.mp4" \
                     -v
                 ;;
             *)
-                echo "❌ Invalid camera choice"
+                echo "Invalid choice. Exiting."
                 exit 1
                 ;;
         esac
         ;;
-    
+
+    # ── MODE 2: Video Processing ─────────────────────────────────────────────
     2)
         echo ""
-        read -p "Enter video path: " video_path
+        read -p "Enter input video path: " video_path
         if [ ! -f "$video_path" ]; then
-            echo "❌ Video not found: $video_path"
+            echo "File not found: $video_path"
             exit 1
         fi
-        
+
         output="${video_path%.*}_detected.mp4"
         echo ""
-        echo "🎬 Processing video with GPU Profile: $GPU_PROFILE"
-        echo "   Input: $video_path"
-        echo "   Output: $output"
+        echo "Video Processing  |  GPU Profile: $GPU_PROFILE"
+        echo "  Input : $video_path"
+        echo "  Output: $output"
         echo ""
-        echo "🚀 Running video inference..."
+        echo "Starting video_inference ..."
         echo ""
-        
         cd "$CNN_DIR"
-        $PYTHON inference/camera_inference.py \
-            --profile "$GPU_PROFILE" \
-            --camera "$video_path" \
-            --save "$output" \
-            -v
+        $PYTHON inference/video_inference.py \
+            --input  "$video_path" \
+            --output "$output"
         ;;
-    
+
+    # ── MODE 3: Train Models ──────────────────────────────────────────────────
     3)
         echo ""
-        echo "🏋️  Starting Training..."
+        echo "Starting training ..."
         echo ""
         cd "$CNN_DIR/training"
         $PYTHON train_classifier.py
         ;;
-    
+
+    # ── MODE 4: Exit ──────────────────────────────────────────────────────────
     4)
-        echo "👋 Goodbye!"
+        echo "Goodbye!"
         exit 0
         ;;
-    
+
     *)
-        echo "❌ Invalid choice"
+        echo "Invalid choice. Exiting."
         exit 1
         ;;
 esac

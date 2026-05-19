@@ -249,168 +249,133 @@ python3 -c "from ultralytics import YOLO; print('Ultralytics OK')"
 
 ---
 
-## Running — Live Camera (`camera_inference.py`)
+## Running the System
 
-> **Always activate the virtual environment first.** Running with the system `python3` uses a different OpenCV build that lacks display support and will fail to open the window.
-
-```bash
-# Activate the venv (required every new terminal session)
-source .venv/bin/activate
-
-# Default USB camera (index 0)
-python3 inference/camera_inference.py
-
-# Specific camera index
-python3 inference/camera_inference.py --camera 1
-
-# Intel RealSense D455
-python3 inference/camera_inference.py --realsense
-
-# Save output video
-python3 inference/camera_inference.py --camera 0 --save output.mp4
-
-# Headless — no display window, save to file only (useful on servers)
-python3 inference/camera_inference.py --camera 0 --no-display --save output.mp4
-
-# Jetson power-save profile
-python3 inference/camera_inference.py --profile jetson_nano_power_save
-```
-
-Press `q` or `ESC` to stop. Session FPS stats are printed on exit.
-
-> **Display window not opening?** If you see `The function is not implemented` or `Rebuild the library with GTK+`, you are running with the wrong Python. Always use `source .venv/bin/activate` first, or run via `bash main.sh` which handles this automatically.
-
-See [Documents/CAMERA_INFERENCE.md](Documents/CAMERA_INFERENCE.md) for full argument reference and class documentation.
-
----
-
-## Running — Video File (`video_inference.py`)
-
-> **Always activate the virtual environment first.**
+> **Always activate the virtual environment before running anything.**
 
 ```bash
 source .venv/bin/activate
-
-# Basic: process video, save result
-python3 inference/video_inference.py --input video.mp4 --output result.mp4
-
-# With CSV telemetry log
-python3 inference/video_inference.py --input video.mp4 --output result.mp4 --log metrics.csv
-
-# Set ego vehicle speed (km/h) for accurate SSM calculations
-python3 inference/video_inference.py --input video.mp4 --output result.mp4 --ego-speed 40.0
-
-# Tune depth pipeline
-python3 inference/video_inference.py \
-    --input video.mp4 \
-    --output result.mp4 \
-    --depth-interval 15 \
-    --classical-weight 0.75
 ```
 
-See [Documents/VIDEO_INFERENCE.md](Documents/VIDEO_INFERENCE.md) for full argument reference, hybrid depth pipeline details, and CSV schema.
-
----
-
-## Using the Main Launcher
-
-`main.sh` is the recommended entry point. It walks you through GPU profile selection and inference mode via interactive prompts — no need to remember command-line arguments.
+The recommended way to run the system is via the interactive launcher:
 
 ```bash
 bash main.sh
 ```
 
+This handles Python path, venv detection, and GPU profile automatically. The full flow is described below.
+
+---
+
+## main.sh — Step-by-Step Walkthrough
+
 ### Step 1 — Select GPU Profile
 
 ```
 ================================================================
-  CNN VEHICLE DETECTION - MAIN LAUNCHER
+  REAR-VIEW ADAS - MAIN LAUNCHER
 ================================================================
 
-  Select GPU Profile:
+Select GPU Profile:
 
-  1.  RTX A6000       (Full Performance)
-  2.  Jetson Nano     (Restricted - 8 GB memory)
-  3.  Jetson Nano     (Power Save - 7 W)
+  1. RTX A6000        (Full Performance)
+  2. Jetson Nano      (Restricted - 8 GB memory)
+  3. Jetson Nano      (Power Save - 7 W)
 
 Enter GPU profile [1-3, default: 1]:
 ```
 
 | Choice | Profile | Use when |
 |---|---|---|
-| `1` | `a6000_full` | Desktop / workstation GPU |
-| `2` | `jetson_nano_restricted` | Jetson Nano with 8 GB limit |
-| `3` | `jetson_nano_power_save` | Jetson Nano battery / low-power mode |
+| `1` | `a6000_full` | Desktop / workstation GPU (default) |
+| `2` | `jetson_nano_restricted` | Jetson Nano, 8 GB RAM limit |
+| `3` | `jetson_nano_power_save` | Jetson Nano, battery / 7 W mode |
 
-Press `Enter` to accept the default (RTX A6000).
+Press `Enter` to use the default (RTX A6000).
 
 ---
 
 ### Step 2 — Select Mode
 
 ```
-  Select what you want to run:
+Select mode:
 
-  1.  Camera Detection  (Real-time)
-  2.  Video Processing
-  3.  Train Models
-  4.  Exit
+  1. Camera Detection   (Real-time inference on live camera)
+  2. Video Processing   (Offline inference on a video file)
+  3. Train Models       (Fine-tune classifier or depth model)
+  4. Exit
 ```
 
 ---
 
-### Mode 1 — Camera Inference (Real-time)
+### Mode 1 — Camera Detection (Real-time)
 
-Choose option `1`, then select a camera source:
+Select `1`. You will then be asked for the camera source:
 
 ```
-  1.  RealSense D455 Camera  (Recommended)
-  2.  USB Camera
-  3.  Test Video (Fallback)
+  1. USB / V4L2 Camera
+  2. Test Video (use a local video file as input)
 ```
 
-| Sub-choice | What happens | Output file |
-|---|---|---|
-| `1` | Opens Intel RealSense D455 | `detection_output_realsense.mp4` |
-| `2` | Prompts for USB camera ID (default `0`) | `detection_output_usb.mp4` |
-| `3` | Runs on built-in test video | `detection_output_test.mp4` |
+**Sub-option 1 — USB / V4L2 Camera:**
 
-The annotated output video is saved automatically in the project root.
+```
+Enter camera index [default: 4]:
+```
+
+Press `Enter` to use the default (camera index `4`), or type another index.
+The annotated live feed is displayed in a window and saved to `detection_output_camera.mp4`.
+
+> **Tip:** Run `ls /dev/video*` in a terminal to list available camera devices.  
+> Press `q` or `ESC` to stop. Session FPS stats are printed on exit.
+
+**Sub-option 2 — Test Video as Camera Input:**
+
+```
+Enter video file path: testing_data/relative_speed_50.mp4
+```
+
+Runs `camera_inference.py` on the video file and saves output as `<name>_camera_result.mp4`.
 
 ---
 
-### Mode 2 — Video Inference (Offline)
+### Mode 2 — Video Processing (Offline)
 
-Choose option `2`, then enter the path to your video file when prompted:
-
-```
-Enter video path: testing_data/relative_speed_50.mp4
-```
-
-The script runs `video_inference.py` on the file and saves the annotated result as `<input_name>_detected.mp4` in the same directory.
-
-Example session:
+Select `2`. Enter the path to your video file when prompted:
 
 ```
-Enter video path: testing_data/relative_speed_50.mp4
+Enter input video path: testing_data/relative_speed_50.mp4
+```
 
-  Processing video with GPU Profile: a6000_full
-  Input:  testing_data/relative_speed_50.mp4
+Runs `video_inference.py` which produces:
+- `<input_name>_detected.mp4` — fully annotated output video with ADAS overlays
+- A CSV telemetry log alongside the video with per-frame safety metrics
+
+Example session output:
+
+```
+Video Processing  |  GPU Profile: a6000_full
+  Input : testing_data/relative_speed_50.mp4
   Output: testing_data/relative_speed_50_detected.mp4
 
-  Running video inference...
-  Frame 924/924 (100.0%) - 36.8 FPS
+Starting video_inference ...
 
-  Processing complete!
-  Frames: 924 | Avg FPS: 36.8
+Frame 924/924 (100.0%) - 36.8 FPS
+
+Processing complete!
+  Frames   : 924
+  Avg FPS  : 36.8
+  Output   : testing_data/relative_speed_50_detected.mp4
 ```
+
+> For detailed tuning options (depth interval, classical weight, ego speed) see [Documents/VIDEO_INFERENCE.md](Documents/VIDEO_INFERENCE.md).
 
 ---
 
 ### Mode 3 — Train Models
 
-Choose option `3` to launch the classifier training script (`training/train_classifier.py`).  
-Requires the UVH-26 dataset placed in `dataset/uvh26_cls/` — see the [Training Datasets](#training-datasets) section above.
+Select `3` to launch the classifier training script.  
+Requires the UVH-26 dataset placed in `dataset/uvh26_cls/` — see [Training Datasets](#training-datasets) above.
 
 ---
 
