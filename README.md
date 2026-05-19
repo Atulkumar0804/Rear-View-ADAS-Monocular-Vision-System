@@ -238,7 +238,7 @@ Download the following files and place them at the exact paths shown:
 
 #### Option C — From GitHub Releases
 
-Check the [Releases page](https://github.com/Atulkumar0804/Rear-View-ADAS/releases) for pre-packaged model archives.
+Check the [Releases page](https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases) for pre-packaged model archives.
 
 ### 5. Verify setup
 

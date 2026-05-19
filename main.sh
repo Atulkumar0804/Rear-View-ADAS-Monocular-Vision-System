@@ -3,7 +3,8 @@
 # Main CNN Launcher - Easy access to all features with GPU Profile Selection
 #
 
-CNN_DIR="/home/atul/Desktop/atul/rear_view_adas_monocular/CNN"
+# Resolve the repo root relative to this script — works on any machine
+CNN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Prefer currently activated venv; fallback to project-local .venv.
 if [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
@@ -137,10 +138,29 @@ case $choice in
     # ── MODE 3: Train Models ──────────────────────────────────────────────────
     3)
         echo ""
-        echo "Starting training ..."
+        echo "Select training task:"
         echo ""
-        cd "$CNN_DIR/training"
-        $PYTHON train_classifier.py
+        echo "  1. Train Depth Model on KITTI (DA2)"
+        echo "  2. Train Depth Model on KITTI (MiDaS)"
+        echo ""
+        read -p "Enter choice [1-2]: " train_choice
+        cd "$CNN_DIR"
+        case $train_choice in
+            1)
+                echo ""
+                echo "Starting DA2 depth training ..."
+                $PYTHON scripts/train_depth_da2_kitti.py
+                ;;
+            2)
+                echo ""
+                echo "Starting MiDaS depth training ..."
+                $PYTHON scripts/train_depth_kitti.py
+                ;;
+            *)
+                echo "Invalid choice. Exiting."
+                exit 1
+                ;;
+        esac
         ;;
 
     # ── MODE 4: Exit ──────────────────────────────────────────────────────────

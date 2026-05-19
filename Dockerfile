@@ -18,11 +18,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Expose Streamlit port
-EXPOSE 8501
+# Expose Flask web server port
+EXPOSE 5000
 
 # Set python path
 ENV PYTHONPATH=/app
 
-# Default command
-CMD ["streamlit", "run", "interface/app.py", "--server.address=0.0.0.0"]
+# Default command — Flask web inference server
+CMD ["python3", "inference/web_server.py"]

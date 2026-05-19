@@ -743,6 +743,11 @@ class CameraVehicleDetector:
         
         # Load Classifier
         CLASSIFIER_PATH = str(CNN_DIR / "models/classifier/weights/best.pt")
+        if not Path(CLASSIFIER_PATH).exists():
+            print(f"❌ Classifier weights not found: {CLASSIFIER_PATH}")
+            print("   Download best.pt from GitHub Releases and place at:")
+            print(f"   {CLASSIFIER_PATH}")
+            raise FileNotFoundError(f"Missing classifier: {CLASSIFIER_PATH}")
         print(f"📦 Loading Classifier: {CLASSIFIER_PATH}")
         self.classifier = YOLO(CLASSIFIER_PATH)
         print("✅ Classifier loaded")
