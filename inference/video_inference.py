@@ -2110,168 +2110,215 @@ class VideoDetector:
         return distance
     
     def draw_detections(self, frame, detections, fps=None):
-        """
-        Draw bounding boxes, labels, distance, motion state, and rear-view safety assessment
-        Enhanced with SSM-based safety indicators
-        """
+        """Draw bounding boxes and ADAS overlay with large, readable HUD text."""
         annotated = frame.copy()
-        
-        # Define alert colors based on safety level
-        safety_colors = {
-            'CRITICAL': (0, 0, 255),      # Red - Critical danger
-            'WARNING': (0, 165, 255),     # Orange - Warning
-            'CAUTION': (0, 255, 255),     # Yellow - Caution
-            'SAFE': (0, 255, 0),          # Green - Safe
-            'unknown': (128, 128, 128)    # Gray - Unknown
+        h, w = annotated.shape[:2]
+
+        # ── font / size constants ────────────────────────────────────────────
+        FONT       = cv2.FONT_HERSHEY_DUPLEX
+        FS_LABEL   = 0.75   # class + conf label
+        FS_DIST    = 1.15   # distance (large, prominent)
+        FS_MOTION  = 0.72   # motion / speed
+        FS_SAFETY  = 0.78   # safety level + SSM metrics
+        FS_ACTION  = 0.72   # rider instruction
+        FS_HUD     = 0.80   # top-bar scenario text
+        FS_FPS     = 1.00   # FPS counter
+        TH         = 2      # text thickness everywhere
+
+        SAFETY_COLORS = {
+            'CRITICAL': (0,   0, 230),
+            'WARNING':  (0, 140, 255),
+            'CAUTION':  (0, 210, 210),
+            'SAFE':     (0, 210,   0),
+            'INFO':     (180, 120, 50),
+            'unknown':  (110, 110, 110),
         }
-        
+        URGENCY_COLORS = {
+            'CRITICAL': (0,   0, 200),
+            'HIGH':     (0, 130, 255),
+            'MEDIUM':   (0, 200, 200),
+            'LOW':      (0, 200,   0),
+        }
+
+        def _put(img, text, org, fs, color, th=TH, outline=True):
+            """Draw text with a thin black outline for contrast on any background."""
+            if outline:
+                cv2.putText(img, text, org, FONT, fs, (0, 0, 0), th + 2, cv2.LINE_AA)
+            cv2.putText(img, text, org, FONT, fs, color, th, cv2.LINE_AA)
+
+        def _badge(img, text, x, y, fs, bg, th=TH, pad=6):
+            """Draw a filled background badge and return the bottom-right corner."""
+            (tw, tbase), _ = cv2.getTextSize(text, FONT, fs, th)
+            y0 = y - tbase - pad
+            x1b = x + tw + pad * 2
+            y1b = y + pad
+            cv2.rectangle(img, (x, y0), (x1b, y1b), bg, -1)
+            cv2.rectangle(img, (x, y0), (x1b, y1b), (255, 255, 255), 1)
+            _put(img, text, (x + pad, y), fs, (255, 255, 255), th, outline=False)
+            return x1b, y1b
+
+        # ── top HUD bar ──────────────────────────────────────────────────────
+        HUD_H = 62
+        overlay = annotated.copy()
+        cv2.rectangle(overlay, (0, 0), (w, HUD_H), (20, 20, 35), -1)
+        cv2.addWeighted(overlay, 0.82, annotated, 0.18, 0, annotated)
+        cv2.line(annotated, (0, HUD_H), (w, HUD_H), (80, 80, 120), 1)
+
+        # FPS + det count (top-right)
+        if fps:
+            fps_col = (0, 210, 0) if fps >= 25 else (0, 150, 255) if fps >= 15 else (0, 60, 230)
+            _put(annotated, f"FPS: {fps:.1f}", (w - 160, 36), FS_FPS, fps_col)
+            _put(annotated, f"DET: {len(detections)}", (w - 160, 56), 0.62, (170, 170, 200))
+
+        # Scenario summary (top-left)
+        if hasattr(self, 'last_scenario_validation') and self.last_scenario_validation:
+            sv = self.last_scenario_validation
+            sc  = sv.get('scenario_type', 'UNKNOWN').upper().replace('_', ' ')
+            thr = sv.get('threat_level', 'none').upper()
+            crt = sv.get('critical_vehicles_count', 0)
+            thr_col = (0, 60, 230) if thr == 'HIGH' else (0, 140, 255) if thr == 'MEDIUM' else (0, 210, 0)
+            _put(annotated, f"REAR VIEW ADAS", (12, 32), 0.82, (255, 255, 255))
+            _put(annotated, f"{sc}  |  THREAT: {thr}  |  CRITICAL: {crt}",
+                 (12, 56), 0.62, thr_col)
+
+        # ── CRITICAL full-width alert banner ────────────────────────────────
+        crit_dets = [d for d in detections
+                     if d.get('safety_assessment', {}).get('level') == 'CRITICAL']
+        if crit_dets:
+            banner_h = 54
+            by = h - banner_h
+            overlay2 = annotated.copy()
+            cv2.rectangle(overlay2, (0, by), (w, h), (0, 0, 180), -1)
+            cv2.addWeighted(overlay2, 0.75, annotated, 0.25, 0, annotated)
+            cv2.line(annotated, (0, by), (w, by), (0, 0, 255), 2)
+            best = min(crit_dets,
+                       key=lambda d: d.get('safety_assessment', {}).get('ttc') or 99)
+            sa  = best.get('safety_assessment', {})
+            ttc = sa.get('ttc')
+            dist = best.get('distance')
+            cls  = best.get('class', '')
+            banner_txt = f"!!! COLLISION WARNING  {cls}"
+            if dist:   banner_txt += f"  {dist:.1f}m"
+            if ttc:    banner_txt += f"  TTC {ttc:.2f}s"
+            action_txt = (best.get('safety_assessment', {}).get('rider_action') or {}).get('rider_instruction', '')
+            bsz, _ = cv2.getTextSize(banner_txt, FONT, 0.90, 2)
+            bx = max(12, (w - bsz[0]) // 2)
+            _put(annotated, banner_txt, (bx, by + 30), 0.90, (255, 255, 255))
+            if action_txt:
+                asz, _ = cv2.getTextSize(action_txt, FONT, 0.72, 2)
+                _put(annotated, action_txt, (max(12, (w - asz[0]) // 2), by + 50), 0.72, (255, 220, 80))
+
+        # ── per-detection rendering ──────────────────────────────────────────
         for det in detections:
             x1, y1, x2, y2 = det['bbox']
-            class_name = det['class']
-            confidence = det['confidence']
-            distance = det.get('distance', None)
-            motion = det.get('motion', 'unknown')
-            distance_metadata = det.get('distance_metadata', {})
-            z_classical = distance_metadata.get('classical_fused', None)
-            z_ml = distance_metadata.get('ml', None)
-            
-            # Get safety assessment
-            safety_assess = det.get('safety_assessment', {})
-            safety_level = safety_assess.get('level', 'unknown')
-            alert_type = safety_assess.get('alert_type', 'none')
-            
-            # Choose color based on safety level (primary) or motion state (fallback)
-            if safety_level != 'unknown':
-                box_color = safety_colors.get(safety_level, (128, 128, 128))
-            else:
-                motion_colors = {
-                    'approaching': (0, 0, 255),    # Red
-                    'receding': (0, 255, 255),     # Yellow
-                    'stable': (0, 255, 0),         # Green
-                    'unknown': CLASS_COLORS.get(class_name, (255, 255, 255))
-                }
-                box_color = motion_colors.get(motion, CLASS_COLORS.get(class_name, (255, 255, 255)))
-            
-            # Draw box with safety-based color
-            cv2.rectangle(annotated, (x1, y1), (x2, y2), box_color, 3)
-            
-            # Draw label with distance
-            if distance:
-                label = f"{class_name}: {confidence:.2f} | D:{distance:.1f}m"
-                if isinstance(z_classical, (int, float, np.floating)):
-                    label += f" C:{float(z_classical):.1f}"
-                if isinstance(z_ml, (int, float, np.floating)):
-                    label += f" ML:{float(z_ml):.1f}"
-            else:
-                label = f"{class_name}: {confidence:.2f}"
-            
-            label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.rectangle(annotated, (x1, y1 - label_size[1] - 10), 
-                         (x1 + label_size[0], y1), box_color, -1)
-            cv2.putText(annotated, label, (x1, y1 - 5), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-            
-            # Draw distance below box (larger text)
-            if distance:
-                dist_text = f"{distance:.1f}m"
-                dist_size, _ = cv2.getTextSize(dist_text, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
-                cv2.rectangle(annotated, (x1, y2), 
-                             (x1 + dist_size[0] + 10, y2 + dist_size[1] + 10), box_color, -1)
-                cv2.putText(annotated, dist_text, (x1 + 5, y2 + dist_size[1] + 5), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-            
-            # Draw motion state on the right side of box
-            if motion != 'unknown':
-                speed = det.get('speed', 0.0)
-                if speed > 0:
-                    motion_text = f"{motion.upper()} {speed:.1f}km/h"
-                else:
-                    motion_text = motion.upper()
-                motion_size, _ = cv2.getTextSize(motion_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
-                motion_x = x2 - motion_size[0] - 10
-                motion_y = y1 + 25
-                cv2.rectangle(annotated, (motion_x - 5, motion_y - motion_size[1] - 5), 
-                             (x2 - 5, motion_y + 5), box_color, -1)
-                cv2.putText(annotated, motion_text, (motion_x, motion_y), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-            
-            # Draw safety level with SSM indicators and LANE-AWARE information
-            if safety_level != 'unknown' and alert_type != 'none':
-                safety_y = y2 + 40
-                
-                # Lane-aware message
-                lane_info = safety_assess.get('lane_info', {})
-                lane_name = lane_info.get('lane', 'UNKNOWN') if lane_info else 'CENTER'
-                is_same_lane = safety_assess.get('same_lane', True)
-                
-                # Build safety text
-                if not is_same_lane:
-                    # Different lane - only informational
-                    safety_text = f"[{lane_name} LANE] {distance:.1f}m away"
-                    box_color = (0, 165, 255)  # Orange for adjacent lane
-                else:
-                    # Same lane - use collision thresholds
-                    safety_text = f"[{safety_level}] {alert_type}"
-                    
-                    # Display key SSM metrics
-                    ttc_val = safety_assess.get('ttc')
-                    drac_val = safety_assess.get('drac')
-                    
-                    if ttc_val is not None:
-                        safety_text += f" TTC:{ttc_val:.2f}s"
-                    if drac_val is not None and drac_val != float('inf'):
-                        safety_text += f" DRAC:{drac_val:.2f}m/s2"
-                
-                safety_size, _ = cv2.getTextSize(safety_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-                cv2.rectangle(annotated, (x1, safety_y - safety_size[1] - 5), 
-                             (x1 + safety_size[0] + 10, safety_y + 5), box_color, -1)
-                cv2.putText(annotated, safety_text, (x1 + 5, safety_y), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-                
-                # Draw RIDER ACTION RECOMMENDATION
-                rider_action = safety_assess.get('rider_action', {})
-                if rider_action and rider_action.get('action'):
-                    action = rider_action.get('action')
-                    instruction = rider_action.get('rider_instruction', '')
-                    reason = rider_action.get('reason', '')
-                    urgency = rider_action.get('urgency', 'LOW')
-                    
-                    # Color based on urgency
-                    urgency_colors = {
-                        'CRITICAL': (0, 0, 255),      # Red
-                        'HIGH': (0, 165, 255),        # Orange
-                        'MEDIUM': (0, 255, 255),      # Yellow
-                        'LOW': (0, 255, 0),           # Green
-                    }
-                    urgency_color = urgency_colors.get(urgency, (128, 128, 128))
-                    
-                    # Draw action instruction
-                    action_y = safety_y + 25
-                    action_text = f">> {instruction[:50]}"
-                    action_size, _ = cv2.getTextSize(action_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-                    cv2.rectangle(annotated, (x1, action_y - action_size[1] - 5), 
-                                 (x1 + action_size[0] + 10, action_y + 5), urgency_color, -1)
-                    cv2.putText(annotated, action_text, (x1 + 5, action_y), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            x1 = max(0, x1);   y1 = max(HUD_H + 2, y1)
+            x2 = min(w - 1, x2); y2 = min(h - 1, y2)
+            if x2 <= x1 or y2 <= y1:
+                continue
 
-        
-        # Draw FPS if provided
-        if fps:
-            fps_text = f"FPS: {fps:.1f}"
-            cv2.putText(annotated, fps_text, (10, 30), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        
-        # Draw scenario information if available
-        if hasattr(self, 'last_scenario_validation') and self.last_scenario_validation:
-            scenario = self.last_scenario_validation
-            scenario_text = (
-                f"Scenario: {scenario.get('scenario_type', 'unknown')} | "
-                f"Threat: {scenario.get('threat_level', 'none')} | "
-                f"Critical Vehicles: {scenario.get('critical_vehicles_count', 0)}"
-            )
-            cv2.putText(annotated, scenario_text, (10, 70), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        
+            cls_name   = det.get('class', 'Unknown')
+            confidence = det.get('confidence', 0.0)
+            distance   = det.get('distance')
+            motion     = det.get('motion', 'unknown')
+            speed      = det.get('speed', 0.0)
+            sa         = det.get('safety_assessment', {})
+            slevel     = sa.get('level', 'unknown')
+            alert_type = sa.get('alert_type', 'none')
+
+            box_col  = SAFETY_COLORS.get(slevel, (110, 110, 110))
+            box_thick = 4 if slevel in ('CRITICAL', 'WARNING') else 2
+
+            # bounding box
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), box_col, box_thick)
+
+            # corner ticks for CRITICAL
+            if slevel == 'CRITICAL':
+                tk = 20
+                for px, py, sx, sy in [(x1,y1,1,1),(x2,y1,-1,1),(x1,y2,1,-1),(x2,y2,-1,-1)]:
+                    cv2.line(annotated, (px, py), (px + sx*tk, py), box_col, 3)
+                    cv2.line(annotated, (px, py), (px, py + sy*tk), box_col, 3)
+
+            # ── top label: Class  Conf%  ──────────────────────────────────
+            label = f"{cls_name}  {confidence*100:.0f}%"
+            (lw, lh), _ = cv2.getTextSize(label, FONT, FS_LABEL, TH)
+            ly = max(HUD_H + 4, y1 - 6)
+            cv2.rectangle(annotated, (x1, ly - lh - 8), (x1 + lw + 12, ly + 4), box_col, -1)
+            _put(annotated, label, (x1 + 6, ly), FS_LABEL, (255, 255, 255), outline=False)
+
+            # ── distance badge below box ──────────────────────────────────
+            if distance:
+                dist_txt = f"{distance:.1f} m"
+                (dw, dh), _ = cv2.getTextSize(dist_txt, FONT, FS_DIST, TH)
+                dy_top = min(h - dh - 12, y2 + 4)
+                cv2.rectangle(annotated, (x1, dy_top), (x1 + dw + 14, dy_top + dh + 10), box_col, -1)
+                _put(annotated, dist_txt, (x1 + 7, dy_top + dh + 4), FS_DIST, (255, 255, 255), outline=False)
+                cursor_y = dy_top + dh + 14
+            else:
+                cursor_y = y2 + 6
+
+            # ── motion / speed badge ───────────────────────────────────────
+            if motion != 'unknown':
+                mot_txt = f"{motion.upper()}  {speed:.1f} km/h" if speed > 0.5 else motion.upper()
+                (mw, mh), _ = cv2.getTextSize(mot_txt, FONT, FS_MOTION, TH)
+                mv_col = (0, 60, 230) if motion == 'approaching' else (0, 180, 0) if motion == 'receding' else (80, 80, 80)
+                mv_top = min(h - mh - 10, cursor_y)
+                cv2.rectangle(annotated, (x1, mv_top), (x1 + mw + 12, mv_top + mh + 8), mv_col, -1)
+                _put(annotated, mot_txt, (x1 + 6, mv_top + mh + 2), FS_MOTION, (255, 255, 255), outline=False)
+                cursor_y = mv_top + mh + 12
+
+            # ── safety level + SSM metrics badge ─────────────────────────
+            if slevel not in ('unknown',) and alert_type != 'none':
+                lane_info  = sa.get('lane_info') or {}
+                lane_nm    = lane_info.get('lane', 'CENTER')
+                is_same    = sa.get('same_lane', True)
+                ttc_v  = sa.get('ttc')
+                drac_v = sa.get('drac')
+
+                if not is_same:
+                    s_txt = f"[{lane_nm} LANE]  {distance:.1f}m"
+                    s_col = (30, 120, 200)
+                else:
+                    s_txt = f"[{slevel}]"
+                    if ttc_v  is not None:                      s_txt += f"  TTC {ttc_v:.2f}s"
+                    if drac_v is not None and drac_v != float('inf'): s_txt += f"  DRAC {drac_v:.1f}m/s²"
+                    s_col = box_col
+
+                (sw, sh), _ = cv2.getTextSize(s_txt, FONT, FS_SAFETY, TH)
+                sy_top = min(h - sh - 10, cursor_y)
+                cv2.rectangle(annotated, (x1, sy_top), (x1 + sw + 14, sy_top + sh + 10), s_col, -1)
+                cv2.rectangle(annotated, (x1, sy_top), (x1 + sw + 14, sy_top + sh + 10), (255,255,255), 1)
+                _put(annotated, s_txt, (x1 + 7, sy_top + sh + 4), FS_SAFETY, (255, 255, 255), outline=False)
+                cursor_y = sy_top + sh + 14
+
+                # ── rider action instruction ──────────────────────────────
+                ra = sa.get('rider_action') or {}
+                if ra.get('action') and is_same:
+                    instr   = ra.get('rider_instruction', '')[:55]
+                    urgency = ra.get('urgency', 'LOW')
+                    u_col   = URGENCY_COLORS.get(urgency, (80, 80, 80))
+                    a_txt   = f">> {instr}"
+                    (aw, ah), _ = cv2.getTextSize(a_txt, FONT, FS_ACTION, TH)
+                    ay_top = min(h - ah - 10, cursor_y)
+                    if ay_top + ah + 10 < h:
+                        cv2.rectangle(annotated, (x1, ay_top), (x1 + aw + 14, ay_top + ah + 10), u_col, -1)
+                        _put(annotated, a_txt, (x1 + 7, ay_top + ah + 4), FS_ACTION, (255, 255, 255), outline=False)
+
+        # ── legend (bottom-right) ────────────────────────────────────────────
+        legend = [("CRITICAL",(0,0,230)),("WARNING",(0,140,255)),
+                  ("CAUTION",(0,210,210)),("SAFE",(0,210,0))]
+        row_h, lpad = 26, 10
+        leg_w = 160
+        lx = w - leg_w - 8
+        ly_base = h - (len(legend) * row_h + 30 + 8)
+        if not crit_dets:
+            cv2.rectangle(annotated, (lx - lpad, ly_base - 4), (w - 4, h - 4), (20, 20, 35), -1)
+            cv2.rectangle(annotated, (lx - lpad, ly_base - 4), (w - 4, h - 4), (80, 80, 120), 1)
+            _put(annotated, "SAFETY LEVEL", (lx, ly_base + 14), 0.52, (200, 200, 220), th=1, outline=False)
+            for idx, (nm, lc) in enumerate(legend):
+                iy = ly_base + 24 + idx * row_h
+                cv2.rectangle(annotated, (lx, iy), (lx + 18, iy + 14), lc, -1)
+                _put(annotated, nm, (lx + 24, iy + 13), 0.52, (220, 220, 235), th=1, outline=False)
+
         return annotated
 
 
