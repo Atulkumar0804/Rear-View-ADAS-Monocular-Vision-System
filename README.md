@@ -303,11 +303,103 @@ See [Documents/VIDEO_INFERENCE.md](Documents/VIDEO_INFERENCE.md) for full argume
 
 ## Using the Main Launcher
 
+`main.sh` is the recommended entry point. It walks you through GPU profile selection and inference mode via interactive prompts — no need to remember command-line arguments.
+
 ```bash
 bash main.sh
 ```
 
-`main.sh` provides an interactive menu to select GPU profile and inference mode (camera or video).
+### Step 1 — Select GPU Profile
+
+```
+================================================================
+  CNN VEHICLE DETECTION - MAIN LAUNCHER
+================================================================
+
+  Select GPU Profile:
+
+  1.  RTX A6000       (Full Performance)
+  2.  Jetson Nano     (Restricted - 8 GB memory)
+  3.  Jetson Nano     (Power Save - 7 W)
+
+Enter GPU profile [1-3, default: 1]:
+```
+
+| Choice | Profile | Use when |
+|---|---|---|
+| `1` | `a6000_full` | Desktop / workstation GPU |
+| `2` | `jetson_nano_restricted` | Jetson Nano with 8 GB limit |
+| `3` | `jetson_nano_power_save` | Jetson Nano battery / low-power mode |
+
+Press `Enter` to accept the default (RTX A6000).
+
+---
+
+### Step 2 — Select Mode
+
+```
+  Select what you want to run:
+
+  1.  Camera Detection  (Real-time)
+  2.  Video Processing
+  3.  Train Models
+  4.  Exit
+```
+
+---
+
+### Mode 1 — Camera Inference (Real-time)
+
+Choose option `1`, then select a camera source:
+
+```
+  1.  RealSense D455 Camera  (Recommended)
+  2.  USB Camera
+  3.  Test Video (Fallback)
+```
+
+| Sub-choice | What happens | Output file |
+|---|---|---|
+| `1` | Opens Intel RealSense D455 | `detection_output_realsense.mp4` |
+| `2` | Prompts for USB camera ID (default `0`) | `detection_output_usb.mp4` |
+| `3` | Runs on built-in test video | `detection_output_test.mp4` |
+
+The annotated output video is saved automatically in the project root.
+
+---
+
+### Mode 2 — Video Inference (Offline)
+
+Choose option `2`, then enter the path to your video file when prompted:
+
+```
+Enter video path: testing_data/relative_speed_50.mp4
+```
+
+The script runs `video_inference.py` on the file and saves the annotated result as `<input_name>_detected.mp4` in the same directory.
+
+Example session:
+
+```
+Enter video path: testing_data/relative_speed_50.mp4
+
+  Processing video with GPU Profile: a6000_full
+  Input:  testing_data/relative_speed_50.mp4
+  Output: testing_data/relative_speed_50_detected.mp4
+
+  Running video inference...
+  Frame 924/924 (100.0%) - 36.8 FPS
+
+  Processing complete!
+  Frames: 924 | Avg FPS: 36.8
+```
+
+---
+
+### Mode 3 — Train Models
+
+Choose option `3` to launch the classifier training script (`training/train_classifier.py`).  
+Requires the UVH-26 dataset placed in `dataset/uvh26_cls/` — see the [Training Datasets](#training-datasets) section above.
 
 ---
 
