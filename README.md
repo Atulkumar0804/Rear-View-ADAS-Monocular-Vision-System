@@ -222,23 +222,36 @@ python3 scripts/download_zoedepth.py
 # bash scripts/download_kitti_depth.sh
 ```
 
-#### Option B — Manual placement
+#### Option B — Direct download from GitHub Releases
 
-Download the following files and place them at the exact paths shown:
+Download each file and place it at the exact path shown:
 
-| File | Path in repo | Source |
-|---|---|---|
-| `yolo11n.pt` | `yolo11n.pt` (root) | Auto-downloaded by Ultralytics on first run |
-| `best.pt` (UVH-26 classifier) | `models/classifier/weights/best.pt` | See GitHub Releases |
-| `da2_kitti_metric.onnx` | `models/depth_lite/da2_kitti_metric.onnx` | See GitHub Releases |
-| `midas_kitti_metric.onnx` | `models/depth_lite/midas_kitti_metric.onnx` | See GitHub Releases |
-| DA2 base model | `models/depth_anything_v2/` | HuggingFace: `depth-anything/Depth-Anything-V2-Small-hf` |
+| File | Size | Destination path | Download |
+|---|---|---|---|
+| `yolo11n.pt` | ~6 MB | `yolo11n.pt` (root) | Auto-downloaded by Ultralytics on first run |
+| `best.pt` | 20 MB | `models/classifier/weights/best.pt` | [Download](https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases/download/v1.0-models/best.pt) |
+| `da2_kitti_metric.onnx` | 95 MB | `models/depth_lite/da2_kitti_metric.onnx` | [Download](https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases/download/v1.0-models/da2_kitti_metric.onnx) |
+| `midas_kitti_metric.onnx` | 95 MB | `models/depth_lite/midas_kitti_metric.onnx` | [Download](https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases/download/v1.0-models/midas_kitti_metric.onnx) |
+| DA2 base model | ~98 MB | `models/depth_anything_v2/` | HuggingFace: `depth-anything/Depth-Anything-V2-Small-hf` |
 
-> **YOLO weights** are downloaded automatically the first time you run any inference script if `yolo11n.pt` is not found.
+Or download all at once using `wget`:
+
+```bash
+mkdir -p models/classifier/weights models/depth_lite
+
+wget -O models/classifier/weights/best.pt \
+  https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases/download/v1.0-models/best.pt
+
+wget -O models/depth_lite/da2_kitti_metric.onnx \
+  https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases/download/v1.0-models/da2_kitti_metric.onnx
+
+wget -O models/depth_lite/midas_kitti_metric.onnx \
+  https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases/download/v1.0-models/midas_kitti_metric.onnx
+```
 
 #### Option C — From GitHub Releases
 
-Check the [Releases page](https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases) for pre-packaged model archives.
+See all releases at: [github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases](https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases)
 
 ### 5. Verify setup
 
@@ -457,7 +470,7 @@ python3 -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
 ```
 FileNotFoundError: models/classifier/weights/best.pt
 ```
-Download `best.pt` from the GitHub Releases page and place at `models/classifier/weights/best.pt`.
+Download `best.pt` from the [Releases page](https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System/releases/download/v1.0-models/best.pt) and place at `models/classifier/weights/best.pt`.
 
 **ByteTracker import error:**
 ```
