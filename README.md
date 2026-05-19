@@ -2,6 +2,11 @@
 
 Real-time rear-side rider assistance for two-wheelers using a single rear-mounted RGB camera. Detects, classifies, and tracks surrounding vehicles; estimates metric depth; assesses collision risk via surrogate safety measures; and generates lane-aware rider recommendations — all at 27–54 FPS on embedded hardware.
 
+> **Looking for the edge-device / Raspberry Pi 5 version?**
+> This repository targets desktop GPUs and Jetson platforms.
+> For the lightweight build optimised for Raspberry Pi 5 and other edge devices, see:
+> **[Rear-View-ADAS-Monocular-Vision-System-Edge-Devices](https://github.com/Atulkumar0804/Rear-View-ADAS-Monocular-Vision-System-Edge-Devices)**
+
 ---
 
 ## Features
