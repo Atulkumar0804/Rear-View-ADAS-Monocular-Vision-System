@@ -37,43 +37,50 @@ Safety alert TPR: **93.3%** | FPR: **6.7%** (lane-aware filtering reduces FPR 2.
 
 ## Results
 
-Each panel shows **Without Inference** (raw camera feed) vs **With Inference** (full ADAS overlay) side by side.  
-Dataset: `relative_speed_50.mp4` — Indian mixed-traffic highway, 30 FPS, RTX A6000.
+Each panel shows **Without Inference** (raw camera feed, left) vs **With Inference** (full ADAS overlay, right) side by side.  
+Source: `relative_speed_50.mp4` — Indian mixed-traffic highway, 1920×1080, 30 FPS, processed on RTX A6000.
 
 ---
 
-### CRITICAL — LCV at 10.8 m, TTC = 0.27 s
-LCV rapidly closing in the same lane. Full-width red alert banner at bottom, per-track emergency brake instruction, corner tick marks on bounding box.
+### SAFE — All vehicles receding, no alert
+Sedans and Hatchbacks detected across lanes. All bounding boxes are green, motion state shows STABLE / RECEDING, no alert banner triggered. System correctly suppresses adjacent-lane vehicles (orange badges = monitor only).
 
-![Critical](Documents/results/compare_critical.jpg)
+![Safe](Documents/results/compare_safe.jpg)
 
 ---
 
-### WARNING — Hatchback approaching at 23 km/h
-Vehicle in center lane approaching with decreasing gap. Orange bounding box, distance badge, TTC and DRAC overlaid, deceleration instruction.
+### WARNING — Vehicles approaching, high deceleration required
+Multiple Sedans approaching in the centre lane. Orange bounding boxes active, WARNING badge with high-deceleration DRAC annotation visible. Per-track distance badges and lane assignment shown. Rider instructed to speed up or prepare to change lane.
 
 ![Warning](Documents/results/compare_warning.jpg)
 
 ---
 
-### CAUTION — Close following distance
-Vehicle within caution threshold. Cyan bounding box, distance and motion state clearly visible, monitor instruction shown.
-
-![Caution](Documents/results/compare_caution.jpg)
-
----
-
-### MULTI-VEHICLE — 9 simultaneous detections
-Dense mixed traffic — LCVs, Hatchbacks, Persons across multiple lanes. Each track has its own distance badge, motion state, and lane-aware safety assessment.
+### MULTI-VEHICLE — 6 simultaneous tracks across 3 lanes
+Dense mixed traffic — Sedans, Bus, Truck, Three-wheeler, Person tracked simultaneously. Each track carries its own distance badge, motion state, lane assignment, and independent safety assessment. Cross-lane suppression active on adjacent vehicles.
 
 ![Multi-vehicle](Documents/results/compare_multi_vehicle.jpg)
 
 ---
 
-### SAFE — All vehicles receding
-Green bounding boxes, distance badges, SAFE legend shown. No alert banner.
+### BE AWARE — KSRTC Bus at 13.3 m, overtaking in RIGHT lane
+Large bus at 13.3 m in the adjacent RIGHT lane approaching at 24.4 km/h. System correctly classifies it as an adjacent-lane event (orange badge) rather than a collision threat — rider is told to stay in lane, not to brake. Trucks in centre lane receive WARNING assessment simultaneously.
 
-![Safe](Documents/results/compare_safe.jpg)
+![Bus adjacent lane](Documents/results/compare_bus_adjacent.jpg)
+
+---
+
+### CRITICAL — Sedan collision imminent, change lane or accelerate
+Sedan at 25.3 m in the same lane with closing relative speed (Truck at 118.8 km/h approaching). Red CRITICAL badge visible with "collision_imminent" label and "Apply strong brakes" instruction overlay. Multiple trucks tracked in adjacent lanes simultaneously.
+
+![Critical](Documents/results/compare_critical.jpg)
+
+---
+
+### CRITICAL — Dense traffic, Two-wheelers at 9.9 m and 10.1 m
+Highest-density scene: 8+ vehicles tracked including Two-wheelers at 9.9 m and 10.1 m in the LEFT lane, Sedans and Trucks across all lanes. CRITICAL assessments on nearest vehicles, BE AWARE on fast-approaching adjacent vehicles. System maintains 30 FPS throughout.
+
+![Dense traffic critical](Documents/results/compare_dense_traffic.jpg)
 
 ---
 
@@ -81,14 +88,14 @@ Green bounding boxes, distance badges, SAFE legend shown. No alert banner.
 
 | Metric | Value |
 |---|---|
-| Input video | `relative_speed_50.mp4` (Indian highway, 30 FPS) |
-| Total frames processed | 924 |
-| Average FPS (RTX A6000) | 36.8 |
-| Total detections logged | 3,783 across 924 frames |
-| CRITICAL alerts | 225 frames |
-| WARNING alerts | 706 frames |
-| CAUTION alerts | 19 frames |
-| Peak detections per frame | 9 vehicles simultaneously |
+| Input video | `relative_speed_50.mp4` — Indian highway, 1920×1080, 30 FPS |
+| Duration | 30.8 seconds (~924 frames) |
+| Processing platform | RTX A6000 (Xeon CPU, 48 GB) |
+| Average FPS | 30.0 (real-time) |
+| Vehicle classes detected | Sedan, Hatchback, Truck, Bus, LCV, Three-wheeler, Person |
+| Peak simultaneous tracks | 8+ vehicles in a single frame |
+| CRITICAL alerts | Same-lane vehicles within TTC < 1.0 s threshold |
+| Adjacent-lane suppression | Active — overtaking vehicles suppressed from collision alerts |
 
 ---
 
