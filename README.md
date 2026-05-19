@@ -251,7 +251,12 @@ python -c "from ultralytics import YOLO; print('Ultralytics OK')"
 
 ## Running — Live Camera (`camera_inference.py`)
 
+> **Always activate the virtual environment first.** Running with the system `python3` uses a different OpenCV build that lacks display support and will fail to open the window.
+
 ```bash
+# Activate the venv (required every new terminal session)
+source .venv/bin/activate
+
 # Default USB camera (index 0)
 python inference/camera_inference.py
 
@@ -264,7 +269,7 @@ python inference/camera_inference.py --realsense
 # Save output video
 python inference/camera_inference.py --camera 0 --save output.mp4
 
-# Headless (no display window)
+# Headless — no display window, save to file only (useful on servers)
 python inference/camera_inference.py --camera 0 --no-display --save output.mp4
 
 # Jetson power-save profile
@@ -273,13 +278,19 @@ python inference/camera_inference.py --profile jetson_nano_power_save
 
 Press `q` or `ESC` to stop. Session FPS stats are printed on exit.
 
+> **Display window not opening?** If you see `The function is not implemented` or `Rebuild the library with GTK+`, you are running with the wrong Python. Always use `source .venv/bin/activate` first, or run via `bash main.sh` which handles this automatically.
+
 See [Documents/CAMERA_INFERENCE.md](Documents/CAMERA_INFERENCE.md) for full argument reference and class documentation.
 
 ---
 
 ## Running — Video File (`video_inference.py`)
 
+> **Always activate the virtual environment first.**
+
 ```bash
+source .venv/bin/activate
+
 # Basic: process video, save result
 python inference/video_inference.py --input video.mp4 --output result.mp4
 
